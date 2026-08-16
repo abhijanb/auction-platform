@@ -10,6 +10,10 @@ const server = Bun.serve({
                 return new Response("Hello, world!");
             case "/register":
                 return authApi.register(req);
+            case "/login":
+                return authApi.login(req);
+            case "/me":
+                return authApi.me(req);
             default:
                 return new Response("Not Found", { status: 404 });
         }
