@@ -1,10 +1,11 @@
+import bcrypt from "bcrypt";
+
+const COST = 10;
+
 export function hashPassword(password: string): Promise<string> {
-    return Bun.password.hash(password, {
-        algorithm: "bcrypt",
-        cost: 12,
-    });
+    return bcrypt.hash(password, COST);
 }
 
 export function verifyPassword(password: string, hash: string): Promise<boolean> {
-    return Bun.password.verify(password, hash);
+    return bcrypt.compare(password, hash);
 }
