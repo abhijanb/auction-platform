@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "auctionStartsAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
