@@ -25,6 +25,14 @@ class ProductsApi {
         return json(product);
     });
 
+    publicList = async (_request: Request) => json(await this.productController.list());
+
+    publicGetById = async (request: Request) => {
+        const product = await this.productController.getById(this.idFrom(request));
+        if (!product) return json({ error: "Product not found" }, 404);
+        return json(product);
+    };
+
     update = admin(async (request) => {
         const parsed = await parseBody(request, updateProductSchema);
         if (!parsed.ok) return parsed.response;

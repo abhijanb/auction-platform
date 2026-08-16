@@ -8,11 +8,12 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
+  id               String             @id @default(cuid())
+  username         String             @unique
+  password         String
+  role             Role               @default(USER)
+  createdAt        DateTime           @default(now())
+  productReminders ProductReminder[]
 }
 
 enum Role {
@@ -21,10 +22,25 @@ enum Role {
 }
 
 model Product {
-  id              String   @id @default(cuid())
+  id              String             @id @default(cuid())
   name            String
   image           String
-  auctionStartsAt DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  auctionStartsAt DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  reminders       ProductReminder[]
+}
+
+model ProductReminder {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }

@@ -1,5 +1,6 @@
 import { authApi } from "./api/auth/auth.api";
 import { productsApi } from "./api/products/products.api";
+import { remindersApi } from "./api/reminders/reminders.api";
 import { ENV } from "./env";
 
 const server = Bun.serve({
@@ -14,6 +15,19 @@ const server = Bun.serve({
         },
         "/me": {
             GET: (req) => authApi.me(req),
+        },
+        "/products": {
+            GET: (req) => productsApi.publicList(req),
+        },
+        "/products/:id": {
+            GET: (req) => productsApi.publicGetById(req),
+        },
+        "/products/:id/remind": {
+            POST: (req) => remindersApi.publicSetReminder(req),
+            DELETE: (req) => remindersApi.publicRemoveReminder(req),
+        },
+        "/me/reminders": {
+            GET: (req) => remindersApi.publicMyReminders(req),
         },
         "/admin/products": {
             GET: (req) => productsApi.list(req),
