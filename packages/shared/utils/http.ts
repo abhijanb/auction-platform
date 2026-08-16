@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
 type ParseResult<T> =
     | { ok: true; body: T }
     | { ok: false; response: Response };

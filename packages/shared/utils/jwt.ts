@@ -5,9 +5,12 @@ const issuer = "auction-platform";
 const audience = "auction-platform-api";
 const expiresIn = "7d";
 
+export type Role = "USER" | "ADMIN";
+
 export type JwtPayload = {
     userId: string;
     username: string;
+    role: Role;
 };
 
 export function signToken(payload: JwtPayload): string {
@@ -25,10 +28,11 @@ export function verifyToken(token: string): JwtPayload | null {
             issuer,
             audience,
         }) as JwtPayload;
-        if (!payload.userId || !payload.username) return null;
+        if (!payload.userId || !payload.username || !payload.role) return null;
         return {
             userId: String(payload.userId),
             username: String(payload.username),
+            role: payload.role === "ADMIN" ? "ADMIN" : "USER",
         };
     } catch {
         return null;
@@ -37,6 +41,9 @@ export function verifyToken(token: string): JwtPayload | null {
 
 export function getBearerToken(request: Request): string | null {
     const header = request.headers.get("authorization");
-    if (!header?.startsWith("Bearer ")) return null;
-    return header.slice("Bearer ".length).trim() || null;
+    if (header?.startsWith("Bearer ")) {
+        return header.slice("Bearer ".length).trim() || null;
+    }
+    const cookie = request.headers.get("cookie")?.match(/(?:^|;\s*)token=([^;]+)/)?.[1];
+    return cookie ?? null;
 }

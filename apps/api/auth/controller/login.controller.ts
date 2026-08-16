@@ -23,13 +23,17 @@ export class LoginController {
             });
         }
 
-        const token = signToken({ userId: user.id, username: user.username });
+        const token = signToken({ userId: user.id, username: user.username, role: user.role });
 
-        // token set as cookie
-
-        return new Response(JSON.stringify({ token, user: { id: user.id, username: user.username }, headers: { "Set-Cookie": `token=${token}; Path=/; HttpOnly` } }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+            JSON.stringify({ token, user: { id: user.id, username: user.username, role: user.role } }),
+            {
+                status: 200,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Set-Cookie": `token=${token}; Path=/; HttpOnly; SameSite=Lax`,
+                },
+            },
+        );
     }
 }

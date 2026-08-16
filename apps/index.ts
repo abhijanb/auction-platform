@@ -1,23 +1,29 @@
 import { authApi } from "./api/auth/auth.api";
+import { productsApi } from "./api/products/products.api";
 import { ENV } from "./env";
 
 const server = Bun.serve({
     port: 3000,
-    fetch(req) {
-        const url = new URL(req.url);
-        switch (url.pathname) {
-            case "/":
-                return new Response("Hello, world!");
-            case "/register":
-                return authApi.register(req);
-            case "/login":
-                return authApi.login(req);
-            case "/me":
-                return authApi.me(req);
-            default:
-                return new Response("Not Found", { status: 404 });
-        }
-
+    routes: {
+        "/": new Response("Hello, world!"),
+        "/register": {
+            POST: (req) => authApi.register(req),
+        },
+        "/login": {
+            POST: (req) => authApi.login(req),
+        },
+        "/me": {
+            GET: (req) => authApi.me(req),
+        },
+        "/admin/products": {
+            GET: (req) => productsApi.list(req),
+            POST: (req) => productsApi.create(req),
+        },
+        "/admin/products/:id": {
+            GET: (req) => productsApi.getById(req),
+            PUT: (req) => productsApi.update(req),
+            DELETE: (req) => productsApi.delete(req),
+        },
     },
     development: ENV.ENVIRONMENT === "development",
 });

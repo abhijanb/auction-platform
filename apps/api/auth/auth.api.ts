@@ -1,6 +1,6 @@
-import { parseBody } from "../../../packages/shared/utils/http";
+import { parseBody, json } from "../../../packages/shared/utils/http";
 import { loginSchema, registerSchema } from "../../../packages/shared/schemas/auth";
-import { getBearerToken, verifyToken } from "../../../packages/shared/utils/jwt";
+import { user } from "../../../packages/shared/utils/auth";
 import { RegisterController } from "./controller/register.controller";
 import { LoginController } from "./controller/login.controller";
 
@@ -25,22 +25,7 @@ class AuthApi {
         return await this.loginController.login(parsed.body);
     }
 
-    async me(request: Request): Promise<Response> {
-        const token = getBearerToken(request);
-        if (!token) {
-            return new Response(JSON.stringify({ error: "Missing bearer token" }), { status: 401 });
-        }
-
-        const payload = await verifyToken(token);
-        if (!payload) {
-            return new Response(JSON.stringify({ error: "Invalid or expired token" }), { status: 401 });
-        }
-
-        return new Response(JSON.stringify({ user: payload }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
+    me = user(async (_request, payload) => json({ user: payload }));
 }
 
 export const authApi = new AuthApi(
