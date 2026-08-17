@@ -32,10 +32,11 @@ model Product {
 }
 
 model ProductReminder {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
   productId String
-  createdAt DateTime @default(now())
+  createdAt DateTime         @default(now())
+  events    ReminderEvent[]
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -43,4 +44,22 @@ model ProductReminder {
   @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
+}
+
+enum ReminderEventKind {
+  BEFORE_START
+  AT_START
+}
+
+model ReminderEvent {
+  id          String            @id @default(cuid())
+  reminderId  String
+  kind        ReminderEventKind
+  scheduledAt DateTime
+  sentAt      DateTime?
+
+  reminder ProductReminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  @@unique([reminderId, kind])
+  @@index([sentAt, scheduledAt])
 }

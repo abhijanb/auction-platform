@@ -5,9 +5,21 @@ export class ReminderController {
         const product = await prisma.product.findUnique({ where: { id: productId } });
         if (!product) return false;
 
+        const startsAt = product.auctionStartsAt;
+        const beforeStart = new Date(startsAt.getTime() - 15 * 60 * 1000);
+
         await prisma.productReminder.upsert({
             where: { userId_productId: { userId, productId } },
-            create: { userId, productId },
+            create: {
+                userId,
+                productId,
+                events: {
+                    create: [
+                        { kind: "BEFORE_START", scheduledAt: beforeStart },
+                        { kind: "AT_START", scheduledAt: startsAt },
+                    ],
+                },
+            },
             update: {},
         });
         return true;
