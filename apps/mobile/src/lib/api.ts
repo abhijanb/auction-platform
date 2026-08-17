@@ -27,6 +27,17 @@ export const registerSchema = z.object({
         .max(128, "Password must be between 8 and 128 characters"),
 });
 
+export const loginSchema = registerSchema;
+export type loginSchemaType = z.infer<typeof loginSchema>
+export interface LoginResponse {
+    token: string;
+    user: {
+        id: string;
+        username: string;
+        role: string;
+    };
+}
+
 export async function register(body: RegisterInput): Promise<{ success: boolean; message: string }> {
     try {
         registerSchema.parse(body);
@@ -37,6 +48,18 @@ export async function register(body: RegisterInput): Promise<{ success: boolean;
         throw error;
     }
     return request("/register", { method: "POST", data: body });
+}
+
+export async function login(body: RegisterInput): Promise<LoginResponse> {
+    try {
+        loginSchema.parse(body);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            throw new Error(error.issues[0]?.message ?? "Invalid input");
+        }
+        throw error;
+    }
+    return request("/login", { method: "POST", data: body });
 }
 
 async function request<T>(path: string, opts: { method?: string; data?: unknown } = {}): Promise<T> {

@@ -2,32 +2,27 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { ApiError, register, registerSchema } from "../lib/api";
 import { router } from "expo-router";
+import { login, loginSchema, loginSchemaType } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 
-type RegisterForm = z.infer<typeof registerSchema>;
-
-export default function RegisterScreen() {
+export default function LoginScreen() {
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
-    const { control, handleSubmit, reset } = useForm<RegisterForm>({
-        resolver: zodResolver(registerSchema),
+    const { control, handleSubmit } = useForm<loginSchemaType>({
+        resolver: zodResolver(loginSchema),
         defaultValues: { username: "", password: "" },
     });
 
-    const onSubmit: SubmitHandler<RegisterForm> = async (values) => {
+    const onSubmit: SubmitHandler<loginSchemaType> = async (values) => {
         if (submitting) return;
         setError(null);
-        setSuccess(null);
         setSubmitting(true);
         try {
-            const result = await register(values);
-            setSuccess(result.message);
-            reset();
-            router.push("/login")
+            const response = await login(values);
+            console.log(response);
+            router.push("/");
         } catch (err) {
             if (err instanceof ApiError || err instanceof Error) {
                 setError(err.message);
@@ -42,12 +37,13 @@ export default function RegisterScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.card}>
-                <Text style={styles.title}>Create account</Text>
+                <Text style={styles.title}>Sign in</Text>
 
                 <Controller
                     control={control}
                     name="username"
-                    render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                    rules={{ required: "Username is required" }}
+                    render={({ field: { onBlur, onChange, value }, fieldState: { error } }) => (
                         <>
                             <TextInput
                                 value={value}
@@ -58,7 +54,7 @@ export default function RegisterScreen() {
                                 autoCorrect={false}
                                 style={[styles.input, error ? styles.inputError : null]}
                             />
-                            {error ? <Text style={styles.fieldError}>{error.message}</Text> : null}
+                            {error && error.message ? <Text style={styles.fieldError}>{error.message}</Text> : null}
                         </>
                     )}
                 />
@@ -66,23 +62,22 @@ export default function RegisterScreen() {
                 <Controller
                     control={control}
                     name="password"
-                    render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                    render={({ field: { onBlur, onChange, value }, fieldState: { error } }) => (
                         <>
                             <TextInput
                                 value={value}
                                 onChangeText={onChange}
                                 onBlur={onBlur}
-                                placeholder="Password (min 8 characters)"
+                                placeholder="Password"
                                 secureTextEntry
                                 style={[styles.input, error ? styles.inputError : null]}
                             />
-                            {error ? <Text style={styles.fieldError}>{error.message}</Text> : null}
+                            {error && error.message ? <Text style={styles.fieldError}>{error.message}</Text> : null}
                         </>
                     )}
                 />
 
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                {success ? <Text style={styles.success}>{success}</Text> : null}
 
                 <Pressable
                     onPress={handleSubmit(onSubmit)}
@@ -92,8 +87,12 @@ export default function RegisterScreen() {
                     {submitting ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text style={styles.buttonText}>Create account</Text>
+                        <Text style={styles.buttonText}>Sign in</Text>
                     )}
+                </Pressable>
+
+                <Pressable onPress={() => router.push("/register")} style={styles.link}>
+                    <Text style={styles.linkText}>Need an account? Create one</Text>
                 </Pressable>
             </View>
         </View>
@@ -152,8 +151,13 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: -6,
     },
-    success: {
-        color: "#16A34A",
+    link: {
+        alignItems: "center",
+        paddingVertical: 8,
+    },
+    linkText: {
+        color: "#4F46E5",
         fontSize: 14,
+        fontWeight: "500",
     },
 });
