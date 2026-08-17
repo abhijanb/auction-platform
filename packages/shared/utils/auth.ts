@@ -1,5 +1,6 @@
 import { getBearerToken, verifyToken, type JwtPayload } from "./jwt";
 import { json } from "./http";
+import { prisma } from "../../db/client";
 
 export type AuthResult =
     | { ok: true; user: JwtPayload }
@@ -12,7 +13,20 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
     const payload = await verifyToken(token);
     if (!payload) return { ok: false, response: json({ error: "Invalid or expired token" }, 401) };
 
-    return { ok: true, user: payload };
+    const dbUser = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, username: true, role: true },
+    });
+    if (!dbUser) return { ok: false, response: json({ error: "User not found" }, 401) };
+
+    return {
+        ok: true,
+        user: {
+            userId: dbUser.id,
+            username: dbUser.username,
+            role: dbUser.role,
+        },
+    };
 }
 
 export async function requireAdmin(request: Request): Promise<AuthResult> {

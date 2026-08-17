@@ -1,13 +1,25 @@
 import { prisma } from "../../../../packages/db/client";
 
+interface ProductInput {
+    name: string;
+    image: string;
+    startingPrice?: number;
+    auctionStartsAt?: string;
+    auctionEndsAt?: string;
+}
+
 export class ProductController {
-    async create(data: { name: string; image: string; auctionStartsAt?: string }) {
+    async create(data: ProductInput) {
         return prisma.product.create({
             data: {
                 name: data.name,
                 image: data.image,
+                startingPrice: data.startingPrice ?? undefined,
                 auctionStartsAt: data.auctionStartsAt
                     ? new Date(data.auctionStartsAt)
+                    : undefined,
+                auctionEndsAt: data.auctionEndsAt
+                    ? new Date(data.auctionEndsAt)
                     : undefined,
             },
         });
@@ -21,17 +33,18 @@ export class ProductController {
         return prisma.product.findUnique({ where: { id } });
     }
 
-    async update(
-        id: string,
-        data: { name?: string; image?: string; auctionStartsAt?: string },
-    ) {
+    async update(id: string, data: Partial<ProductInput>) {
         return prisma.product.update({
             where: { id },
             data: {
                 name: data.name,
                 image: data.image,
+                startingPrice: data.startingPrice,
                 auctionStartsAt: data.auctionStartsAt
                     ? new Date(data.auctionStartsAt)
+                    : undefined,
+                auctionEndsAt: data.auctionEndsAt
+                    ? new Date(data.auctionEndsAt)
                     : undefined,
             },
         });

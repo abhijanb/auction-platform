@@ -5,7 +5,7 @@ export function formatDateTime(iso: string): string {
 }
 
 export function toIso(datetimeLocal: string): string {
-    return datetimeLocal + ":00Z";
+    return new Date(datetimeLocal).toISOString();
 }
 
 export function toDatetimeLocal(iso: string): string {

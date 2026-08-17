@@ -21,7 +21,7 @@ export function RegisterForm({ onAuthed }: { onAuthed: (user: AuthUser) => void 
         }
 
         try {
-            await apiFetch<{ success: boolean; message: string }>("/register", { data: parsed.data });
+            await apiFetch<{ success: boolean; message: string }>("/register-admin", { data: parsed.data });
             const data = await apiFetch<{ token: string; user: AuthUser }>("/login", { data: parsed.data });
             storeToken(data.token);
             onAuthed(data.user);

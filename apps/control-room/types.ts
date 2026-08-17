@@ -8,7 +8,9 @@ export interface Product {
     id: string;
     name: string;
     image: string;
+    startingPrice: string | null;
     auctionStartsAt: string;
+    auctionEndsAt?: string | null;
     createdAt: string;
 }
 

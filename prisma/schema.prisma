@@ -25,7 +25,9 @@ model Product {
   id              String             @id @default(cuid())
   name            String
   image           String
+  startingPrice   Decimal?           @db.Decimal(10, 2)
   auctionStartsAt DateTime           @default(now())
+  auctionEndsAt   DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   reminders       ProductReminder[]
