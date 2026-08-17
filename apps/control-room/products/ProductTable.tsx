@@ -24,7 +24,10 @@ export function ProductTable({ products, onEdit, onDelete, deleting = false }: {
                     </tr>
                 </thead>
                 <tbody>
-                    {products.map((product) => (
+                    {products.map((product) => {
+                        const status = productStatus(product);
+                        const locked = status !== "SCHEDULED";
+                        return (
                         <tr key={product.id} className="border-b border-gray-100">
                             <td className="py-3 pr-4">
                                 <img
@@ -44,25 +47,29 @@ export function ProductTable({ products, onEdit, onDelete, deleting = false }: {
                                 {product.auctionEndsAt ? formatDateTime(product.auctionEndsAt) : "—"}
                             </td>
                             <td className="py-3 pr-4">
-                                <StatusBadge status={productStatus(product)} />
+                                <StatusBadge status={status} />
                             </td>
                             <td className="py-3 pr-4 text-right whitespace-nowrap">
                                 <button
                                     onClick={() => onEdit(product.id)}
-                                    className="px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                    disabled={locked}
+                                    title={locked ? "Auction has started" : undefined}
+                                    className="px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
                                 >
                                     Edit
                                 </button>
                                 <button
                                     onClick={() => onDelete(product.id)}
-                                    disabled={deleting}
-                                    className="ml-1 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    disabled={locked || deleting}
+                                    title={locked ? "Auction has started" : undefined}
+                                    className="ml-1 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
                                 >
                                     Delete
                                 </button>
                             </td>
                         </tr>
-                    ))}
+                        );
+                    })}
                 </tbody>
             </table>
         </div>

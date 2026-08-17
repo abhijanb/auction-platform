@@ -36,16 +36,34 @@ class ProductsApi {
     update = admin(async (request) => {
         const parsed = await parseBody(request, updateProductSchema);
         if (!parsed.ok) return parsed.response;
-        return json(await this.productController.update(this.idFrom(request), parsed.body));
+        const id = this.idFrom(request);
+        const product = await this.productController.getById(id);
+        if (!product) return json({ error: "Product not found" }, 404);
+        const lock = this.lockResponse(product);
+        if (lock) return lock;
+        return json(await this.productController.update(id, parsed.body));
     });
 
     delete = admin(async (request) => {
-        await this.productController.delete(this.idFrom(request));
+        const id = this.idFrom(request);
+        const product = await this.productController.getById(id);
+        if (!product) return json({ error: "Product not found" }, 404);
+        const lock = this.lockResponse(product);
+        if (lock) return lock;
+        await this.productController.delete(id);
         return json({ success: true });
     });
 
     private idFrom(request: Request): string {
         return (request as RouteRequest).params.id!;
+    }
+
+    private lockResponse(product: { auctionStartsAt: Date }): Response | null {
+        const started = new Date(product.auctionStartsAt).getTime() <= Date.now();
+        if (started) {
+            return json({ error: "Auction has started; product can no longer be changed" }, 409);
+        }
+        return null;
     }
 }
 
