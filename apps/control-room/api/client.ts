@@ -22,11 +22,12 @@ client.interceptors.request.use((config) => {
     return config;
 });
 
-export async function apiFetch<T>(path: string, data?: unknown): Promise<T> {
+export async function apiFetch<T>(path: string, opts: { method?: string; data?: unknown } = {}): Promise<T> {
+    const { method, data } = opts;
     try {
         const response = await client.request<T>({
             url: path,
-            method: data !== undefined ? "POST" : "GET",
+            method: method ?? (data !== undefined ? "POST" : "GET"),
             data,
         });
         return response.data;
