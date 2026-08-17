@@ -17,6 +17,8 @@
     "@types/bun": "latest",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.21.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "prisma": "^7.9.1"
   },
   "peerDependencies": {
@@ -27,8 +29,12 @@
     "@prisma/client": "^7.9.1",
     "amqplib": "^2.0.1",
     "bcrypt": "^6.0.0",
+    "bun-plugin-tailwind": "^0.1.2",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3",
     "zod": "^4.4.3"
   }
 }

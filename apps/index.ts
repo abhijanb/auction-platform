@@ -1,11 +1,13 @@
 import { authApi } from "./api/auth/auth.api";
 import { productsApi } from "./api/products/products.api";
 import { remindersApi } from "./api/reminders/reminders.api";
+import controlRoom from "./control-room/index.html";
 import { ENV } from "./env";
 
 const server = Bun.serve({
     port: 3000,
     routes: {
+        "/dashboard": controlRoom,
         "/": new Response("Hello, world!"),
         "/register": {
             POST: (req) => authApi.register(req),
