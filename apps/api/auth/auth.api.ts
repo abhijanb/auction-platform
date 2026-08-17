@@ -14,8 +14,12 @@ class AuthApi {
         const parsed = await parseBody(request, registerSchema);
         if (!parsed.ok) return parsed.response;
 
-        await this.registerController.register(parsed.body);
-        return new Response("User registered successfully", { status: 201 });
+        try {
+            await this.registerController.register(parsed.body);
+            return json({ success: true, message: "User registered successfully" }, 201);
+        } catch (error) {
+            return json({ error: error instanceof Error ? error.message : "Registration failed" }, 400);
+        }
     }
 
     async login(request: Request): Promise<Response> {

@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "bun --watch apps/index.ts",
+    "dev:all": "bun apps/dev.ts",
     "dev:worker": "bun apps/worker/index.ts",
     "dev:scheduler": "bun apps/scheduler/index.ts"
   },
@@ -28,6 +29,7 @@
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "amqplib": "^2.0.1",
+    "axios": "^1.19.0",
     "bcrypt": "^6.0.0",
     "bun-plugin-tailwind": "^0.1.2",
     "jsonwebtoken": "^9.0.3",

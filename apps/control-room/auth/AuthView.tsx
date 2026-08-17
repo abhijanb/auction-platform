@@ -1,37 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { loginSchema, registerSchema } from "../../../packages/shared/schemas/auth";
+import { apiFetch, clearToken, storeToken } from "../api/client";
 
 interface AuthUser {
     id: string;
     username: string;
     role: "USER" | "ADMIN";
-}
-
-const TOKEN_KEY = "control_room_token";
-
-function storeToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
-}
-
-async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const token = getToken();
-    const response = await fetch(path, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...options.headers,
-        },
-    });
-    if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Request failed");
-    }
-    return response.json() as Promise<T>;
 }
 
 export function AuthView() {
@@ -57,7 +31,6 @@ export function AuthView() {
     async function handleSubmit(event: React.FormEvent): Promise<void> {
         event.preventDefault();
         setError(null);
-        const path = mode === "login" ? "/login" : "/register";
         const schema = mode === "login" ? loginSchema : registerSchema;
 
         const parsed = schema.safeParse({ username, password });
@@ -68,10 +41,10 @@ export function AuthView() {
         }
 
         try {
-            const data = await apiFetch<{ token: string; user: AuthUser }>(path, {
-                method: "POST",
-                body: JSON.stringify(parsed.data),
-            });
+            if (mode === "register") {
+                await apiFetch<{ success: boolean; message: string }>("/register", parsed.data);
+            }
+            const data = await apiFetch<{ token: string; user: AuthUser }>("/login", parsed.data);
             storeToken(data.token);
             setUser(data.user);
         } catch (err) {
@@ -80,7 +53,7 @@ export function AuthView() {
     }
 
     async function handleLogout(): Promise<void> {
-        localStorage.removeItem(TOKEN_KEY);
+        clearToken();
         setUser(null);
         setPassword("");
     }
