@@ -1,4 +1,5 @@
 import amqplib, { type Channel, type ChannelModel } from "amqplib";
+import { logger } from "../shared/utils/logger";
 
 export const REMINDER_QUEUE = "auction.reminders";
 
@@ -28,14 +29,29 @@ export function consumeReminders(handler: (message: string) => Promise<void>): v
     if (!channel) throw new Error("Messaging not connected. Call connect() first.");
     channel.consume(REMINDER_QUEUE, async (msg) => {
         if (!msg) return;
+        const deaths = (msg.properties.headers?.["x-death"] as Array<{ count: number }> | undefined)?.[0]?.count ?? 0;
+        const redeliveries = deaths + (msg.fields.redelivered ? 1 : 0);
+        logger.debug(
+            { redeliveries, xDeath: deaths, redelivered: msg.fields.redelivered, message: msg.content.toString() },
+            "message received"
+        );
         try {
             await handler(msg.content.toString());
+            logger.debug({ eventId: parseEventId(msg.content.toString()) }, "message acked");
             channel!.ack(msg);
         } catch (error) {
-            console.error("[messaging] handler failed", error);
+            logger.error(error, "handler failed, nack(requeue=true)");
             channel!.nack(msg, false, true);
         }
     });
+}
+
+function parseEventId(raw: string): string | undefined {
+    try {
+        return (JSON.parse(raw) as { eventId?: string }).eventId;
+    } catch {
+        return undefined;
+    }
 }
 
 export async function close(): Promise<void> {

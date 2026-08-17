@@ -3,6 +3,7 @@ import { productsApi } from "./api/products/products.api";
 import { remindersApi } from "./api/reminders/reminders.api";
 import controlRoom from "./control-room/index.html";
 import { ENV } from "./env";
+import { logger } from "../packages/shared/utils/logger";
 
 const server = Bun.serve({
     port: 3000,
@@ -44,4 +45,4 @@ const server = Bun.serve({
     development: ENV.ENVIRONMENT === "development",
 });
 
-console.log(`Server running at http://${server.hostname}:${server.port}`);
+logger.info({ hostname: server.hostname, port: server.port }, "server running");

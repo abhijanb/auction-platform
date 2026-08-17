@@ -1,5 +1,6 @@
 import { prisma } from "../../packages/db/client";
 import { connect, publishReminder } from "../../packages/messaging";
+import { logger } from "../../packages/shared/utils/logger";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -23,26 +24,37 @@ async function publishDueReminders(): Promise<void> {
 
         const ok = publishReminder(message);
         if (!ok) {
-            console.error(`[scheduler] failed to publish event ${event.id}, will retry next tick`);
+            logger.error({ eventId: event.id }, "failed to publish event, will retry next tick");
             continue;
         }
+
+        const delayMs = Date.now() - event.scheduledAt.getTime();
+        logger.info(
+            {
+                kind: event.kind,
+                username: message.username,
+                productName: message.productName,
+                scheduledAt: event.scheduledAt.toISOString(),
+                dispatchedAfterSeconds: Math.round(delayMs / 1000),
+            },
+            "dispatched reminder"
+        );
 
         await prisma.reminderEvent.update({
             where: { id: event.id },
             data: { sentAt: new Date() },
         });
-        console.log(`[scheduler] dispatched ${event.kind} for ${message.username} -> ${message.productName}`);
     }
 }
 
 await connect();
-console.log(`[scheduler] started, polling every ${POLL_INTERVAL_MS}ms`);
+logger.info({ pollIntervalMs: POLL_INTERVAL_MS }, "scheduler started");
 
 while (true) {
     try {
         await publishDueReminders();
     } catch (error) {
-        console.error("[scheduler] tick failed", error);
+        logger.error(error, "scheduler tick failed");
     }
     await Bun.sleep(POLL_INTERVAL_MS);
 }

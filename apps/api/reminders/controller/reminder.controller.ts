@@ -1,4 +1,5 @@
 import { prisma } from "../../../../packages/db/client";
+import { logger } from "../../../../packages/shared/utils/logger";
 
 export class ReminderController {
     async create(userId: string, productId: string): Promise<boolean> {
@@ -7,7 +8,20 @@ export class ReminderController {
 
         const startsAt = product.auctionStartsAt;
         const beforeStart = new Date(startsAt.getTime() - 15 * 60 * 1000);
+        const now = new Date();
 
+        logger.info(
+            {
+                userId,
+                productId,
+                productName: product.name,
+                auctionStartsAt: startsAt.toISOString(),
+                beforeStart: beforeStart.toISOString(),
+                beforeStartIsPast: beforeStart < now,
+                minutesUntilAuction: (startsAt.getTime() - now.getTime()) / 60000,
+            },
+            "reminder created"
+        );
         await prisma.productReminder.upsert({
             where: { userId_productId: { userId, productId } },
             create: {

@@ -1,4 +1,5 @@
 import type { ReminderEventKind } from "../../../generated/prisma/enums";
+import { logger } from "./logger";
 
 export interface ReminderMessage {
     eventId: string;
@@ -16,10 +17,16 @@ export interface Notifier {
 
 export class ConsoleNotifier implements Notifier {
     async send(message: ReminderMessage): Promise<void> {
-        const when = message.kind === "BEFORE_START" ? "15 minutes before start" : "at auction start";
-        console.log(
-            `[notify] Reminder for ${message.username} (${message.userId}) about "${message.productName}" ` +
-                `(${message.productId}) ${when}. Auction starts at ${message.auctionStartsAt}.`
+        logger.info(
+            {
+                kind: message.kind,
+                userId: message.userId,
+                username: message.username,
+                productId: message.productId,
+                productName: message.productName,
+                auctionStartsAt: message.auctionStartsAt,
+            },
+            message.kind === "BEFORE_START" ? "reminder: 15 minutes before auction start" : "reminder: auction starting now"
         );
     }
 }
