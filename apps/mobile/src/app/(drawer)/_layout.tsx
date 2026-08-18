@@ -10,6 +10,13 @@ export default function DrawerLayout() {
                     title: "Dashboard",
                 }}
             />
+            <Drawer.Screen
+                name="auction"
+                options={{
+                    drawerLabel: "Auction",
+                    title: "Auction",
+                }}
+            />
         </Drawer>
     );
 }
