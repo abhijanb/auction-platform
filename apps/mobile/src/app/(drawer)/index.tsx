@@ -1,9 +1,11 @@
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Redirect } from "expo-router";
 import type { RootState } from "@/store/store";
 import { BADGE_COLORS, SECTION_ORDER, SECTION_TITLE } from "@/lib/constants";
 import ProductCard from "@/component/ProductCard";
+import { connectSocket, disconnectSocket } from "@/lib/socket";
 import {
     productStatus,
     useGetProductsQuery,
@@ -16,6 +18,29 @@ export default function HomeScreen() {
     const { data: products, isLoading, error } = useGetProductsQuery(undefined, {
         skip: !isAuthenticated,
     });
+    const [connected, setConnected] = useState(false);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const socket = connectSocket();
+
+        const onConnect = () => setConnected(true);
+        const onDisconnect = () => setConnected(false);
+        const onError = () => setConnected(false);
+
+        socket.on("connect", onConnect);
+        socket.on("disconnect", onDisconnect);
+        socket.on("connect_error", onError);
+
+        setConnected(socket.connected);
+
+        return () => {
+            socket.off("connect", onConnect);
+            socket.off("disconnect", onDisconnect);
+            socket.off("connect_error", onError);
+            disconnectSocket();
+        };
+    }, [isAuthenticated]);
 
     if (!isAuthenticated) return <Redirect href="/login" />;
 
@@ -49,7 +74,15 @@ export default function HomeScreen() {
             style={styles.container}
             contentContainerStyle={styles.content}
             ListHeaderComponent={
-                <Text style={styles.title}>Dashboard</Text>
+                <View>
+                    <View style={[styles.statusPill, connected ? styles.statusPillConnected : styles.statusPillDisconnected]}>
+                        <View style={[styles.statusDot, connected ? styles.statusDotConnected : styles.statusDotDisconnected]} />
+                        <Text style={[styles.statusText, connected ? styles.statusTextConnected : styles.statusTextDisconnected]}>
+                            {connected ? "Connected" : "Not connected"}
+                        </Text>
+                    </View>
+                    <Text style={styles.title}>Dashboard</Text>
+                </View>
             }
             data={sections}
             keyExtractor={(section) => section.status}
@@ -88,6 +121,43 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#111827",
         marginBottom: 8,
+    },
+    statusPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        marginBottom: 8,
+    },
+    statusPillConnected: {
+        backgroundColor: "#DCFCE7",
+    },
+    statusPillDisconnected: {
+        backgroundColor: "#FEE2E2",
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    statusDotConnected: {
+        backgroundColor: "#16A34A",
+    },
+    statusDotDisconnected: {
+        backgroundColor: "#DC2626",
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: "600",
+    },
+    statusTextConnected: {
+        color: "#15803D",
+    },
+    statusTextDisconnected: {
+        color: "#B91C1C",
     },
     section: {
         gap: 12,
