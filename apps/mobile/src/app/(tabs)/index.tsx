@@ -5,6 +5,7 @@ import { Redirect } from "expo-router";
 import type { RootState } from "@/store/store";
 import { BADGE_COLORS, SECTION_ORDER, SECTION_TITLE } from "@/lib/constants";
 import ProductCard from "@/component/ProductCard";
+import FeaturedAuction from "@/component/FeaturedAuction";
 import { connectSocket, disconnectSocket } from "@/lib/socket";
 import {
     productStatus,
@@ -69,12 +70,17 @@ export default function HomeScreen() {
         products: (products ?? []).filter((p) => productStatus(p) === status),
     }));
 
+    const featured =
+        (products ?? []).find((p) => productStatus(p) === "LIVE") ??
+        (products ?? [])[0];
+
     return (
         <FlatList
             style={styles.container}
             contentContainerStyle={styles.content}
             ListHeaderComponent={
                 <View>
+                    {featured && <FeaturedAuction product={featured} />}
                     <View style={[styles.statusPill, connected ? styles.statusPillConnected : styles.statusPillDisconnected]}>
                         <View style={[styles.statusDot, connected ? styles.statusDotConnected : styles.statusDotDisconnected]} />
                         <Text style={[styles.statusText, connected ? styles.statusTextConnected : styles.statusTextDisconnected]}>
