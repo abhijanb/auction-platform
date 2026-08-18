@@ -3,12 +3,15 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
-import { login, loginSchema, loginSchemaType } from "@/lib/api";
-import { ApiError } from "@/lib/api";
+import { useDispatch } from "react-redux";
+import { loginSchema, loginSchemaType } from "@/lib/api";
+import { useLoginMutation } from "@/store/authApi";
+import { setCredentials } from "@/store/authSlice";
 
 export default function LoginScreen() {
     const [error, setError] = useState<string | null>(null);
-    const [submitting, setSubmitting] = useState(false);
+    const [login, { isLoading }] = useLoginMutation();
+    const dispatch = useDispatch();
 
     const { control, handleSubmit } = useForm<loginSchemaType>({
         resolver: zodResolver(loginSchema),
@@ -16,21 +19,18 @@ export default function LoginScreen() {
     });
 
     const onSubmit: SubmitHandler<loginSchemaType> = async (values) => {
-        if (submitting) return;
         setError(null);
-        setSubmitting(true);
         try {
-            const response = await login(values);
-            console.log(response);
+            const response = await login(values).unwrap();
+            dispatch(setCredentials(response));
             router.push("/");
         } catch (err) {
-            if (err instanceof ApiError || err instanceof Error) {
-                setError(err.message);
+            if (err && typeof err === "object" && "data" in err) {
+                const data = (err as { data?: { error?: string } }).data;
+                setError(data?.error ?? "Invalid credentials");
             } else {
                 setError("Something went wrong");
             }
-        } finally {
-            setSubmitting(false);
         }
     };
 
@@ -81,10 +81,10 @@ export default function LoginScreen() {
 
                 <Pressable
                     onPress={handleSubmit(onSubmit)}
-                    disabled={submitting}
-                    style={[styles.button, { opacity: submitting ? 0.5 : 1 }]}
+                    disabled={isLoading}
+                    style={[styles.button, { opacity: isLoading ? 0.5 : 1 }]}
                 >
-                    {submitting ? (
+                    {isLoading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
                         <Text style={styles.buttonText}>Sign in</Text>

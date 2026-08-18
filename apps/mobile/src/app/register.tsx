@@ -3,7 +3,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ApiError, register, registerSchema } from "../lib/api";
+import { registerSchema } from "../lib/api";
+import { useRegisterMutation } from "../store/authApi";
 import { router } from "expo-router";
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -11,7 +12,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterScreen() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [submitting, setSubmitting] = useState(false);
+    const [register, { isLoading }] = useRegisterMutation();
 
     const { control, handleSubmit, reset } = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema),
@@ -19,23 +20,20 @@ export default function RegisterScreen() {
     });
 
     const onSubmit: SubmitHandler<RegisterForm> = async (values) => {
-        if (submitting) return;
         setError(null);
         setSuccess(null);
-        setSubmitting(true);
         try {
-            const result = await register(values);
+            const result = await register(values).unwrap();
             setSuccess(result.message);
             reset();
             router.push("/login")
         } catch (err) {
-            if (err instanceof ApiError || err instanceof Error) {
-                setError(err.message);
+            if (err && typeof err === "object" && "data" in err) {
+                const data = (err as { data?: { error?: string } }).data;
+                setError(data?.error ?? "Registration failed");
             } else {
                 setError("Something went wrong");
             }
-        } finally {
-            setSubmitting(false);
         }
     };
 
@@ -86,10 +84,10 @@ export default function RegisterScreen() {
 
                 <Pressable
                     onPress={handleSubmit(onSubmit)}
-                    disabled={submitting}
-                    style={[styles.button, { opacity: submitting ? 0.5 : 1 }]}
+                    disabled={isLoading}
+                    style={[styles.button, { opacity: isLoading ? 0.5 : 1 }]}
                 >
-                    {submitting ? (
+                    {isLoading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
                         <Text style={styles.buttonText}>Create account</Text>
