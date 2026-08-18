@@ -4,6 +4,13 @@ import { store } from "../store/store";
 
 let socket: Socket | null = null;
 
+export interface BidJoined {
+    productId: string;
+    status: string;
+    currentPrice: number | string | null;
+    auctionEndsAt: string | null;
+}
+
 export function connectSocket(): Socket {
     if (socket) return socket;
 
@@ -24,4 +31,12 @@ export function connectSocket(): Socket {
 export function disconnectSocket(): void {
     socket?.disconnect();
     socket = null;
+}
+
+export function joinAuction(socket: Socket, productId: string): void {
+    socket.emit("bid:join", { productId });
+}
+
+export function leaveAuction(socket: Socket, productId: string): void {
+    socket.emit("bid:leave", { productId });
 }
