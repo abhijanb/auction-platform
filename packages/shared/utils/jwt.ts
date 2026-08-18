@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import type { Request } from "express";
 
 const secret = process.env.JWT_SECRET ?? "";
 const issuer = "auction-platform";
@@ -39,11 +40,11 @@ export function verifyToken(token: string): JwtPayload | null {
     }
 }
 
-export function getBearerToken(request: Request): string | null {
-    const header = request.headers.get("authorization");
+export function getBearerToken(req: Request): string | null {
+    const header = req.headers.authorization;
     if (header?.startsWith("Bearer ")) {
         return header.slice("Bearer ".length).trim() || null;
     }
-    const cookie = request.headers.get("cookie")?.match(/(?:^|;\s*)token=([^;]+)/)?.[1];
+    const cookie = req.headers.cookie?.match(/(?:^|;\s*)token=([^;]+)/)?.[1];
     return cookie ?? null;
 }

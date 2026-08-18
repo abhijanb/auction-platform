@@ -1,3 +1,4 @@
+import type { Request, Response } from "express";
 import { parseBody, json } from "../../../packages/shared/utils/http";
 import {
     createProductSchema,
@@ -6,64 +7,66 @@ import {
 import { admin, user } from "../../../packages/shared/utils/auth";
 import { ProductController } from "./controller/product.controller";
 
-type RouteRequest = Request & { params: Record<string, string> };
-
 class ProductsApi {
     constructor(private productController: ProductController) {}
 
-    create = admin(async (request) => {
-        const parsed = await parseBody(request, createProductSchema);
-        if (!parsed.ok) return parsed.response;
-        return json(await this.productController.create(parsed.body), 201);
+    create = admin(async (req, res) => {
+        const parsed = await parseBody(req, createProductSchema);
+        if (!parsed.ok) {
+            json(res, { error: parsed.error }, 400);
+            return;
+        }
+        json(res, await this.productController.create(parsed.body), 201);
     });
 
-    list = admin(async () => json(await this.productController.list()));
+    list = admin(async (_req, res) => json(res, await this.productController.list()));
 
-    getById = admin(async (request) => {
-        const product = await this.productController.getById(this.idFrom(request));
-        if (!product) return json({ error: "Product not found" }, 404);
-        return json(product);
+    getById = admin(async (req, res) => {
+        const product = await this.productController.getById(this.idFrom(req));
+        if (!product) return json(res, { error: "Product not found" }, 404);
+        json(res, product);
     });
 
-    publicList = user(async () => json(await this.productController.list()));
+    publicList = user(async (_req, res) => json(res, await this.productController.list()));
 
-    publicGetById = user(async (request: Request) => {
-        const product = await this.productController.getById(this.idFrom(request));
-        if (!product) return json({ error: "Product not found" }, 404);
-        return json(product);
+    publicGetById = user(async (req, res) => {
+        const product = await this.productController.getById(this.idFrom(req));
+        if (!product) return json(res, { error: "Product not found" }, 404);
+        json(res, product);
     });
 
-    update = admin(async (request) => {
-        const parsed = await parseBody(request, updateProductSchema);
-        if (!parsed.ok) return parsed.response;
-        const id = this.idFrom(request);
+    update = admin(async (req, res) => {
+        const parsed = await parseBody(req, updateProductSchema);
+        if (!parsed.ok) {
+            json(res, { error: parsed.error }, 400);
+            return;
+        }
+        const id = this.idFrom(req);
         const product = await this.productController.getById(id);
-        if (!product) return json({ error: "Product not found" }, 404);
-        const lock = this.lockResponse(product);
-        if (lock) return lock;
-        return json(await this.productController.update(id, parsed.body));
+        if (!product) return json(res, { error: "Product not found" }, 404);
+        if (this.locked(product)) {
+            return json(res, { error: "Auction has started; product can no longer be changed" }, 409);
+        }
+        json(res, await this.productController.update(id, parsed.body));
     });
 
-    delete = admin(async (request) => {
-        const id = this.idFrom(request);
+    delete = admin(async (req, res) => {
+        const id = this.idFrom(req);
         const product = await this.productController.getById(id);
-        if (!product) return json({ error: "Product not found" }, 404);
-        const lock = this.lockResponse(product);
-        if (lock) return lock;
+        if (!product) return json(res, { error: "Product not found" }, 404);
+        if (this.locked(product)) {
+            return json(res, { error: "Auction has started; product can no longer be changed" }, 409);
+        }
         await this.productController.delete(id);
-        return json({ success: true });
+        json(res, { success: true });
     });
 
-    private idFrom(request: Request): string {
-        return (request as RouteRequest).params.id!;
+    private idFrom(req: Request): string {
+        return req.params.id as string;
     }
 
-    private lockResponse(product: { auctionStartsAt: Date }): Response | null {
-        const started = new Date(product.auctionStartsAt).getTime() <= Date.now();
-        if (started) {
-            return json({ error: "Auction has started; product can no longer be changed" }, 409);
-        }
-        return null;
+    private locked(product: { auctionStartsAt: Date }): boolean {
+        return new Date(product.auctionStartsAt).getTime() <= Date.now();
     }
 }
 

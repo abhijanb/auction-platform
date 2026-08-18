@@ -1,23 +1,23 @@
+import type { Request, Response } from "express";
 import { getBearerToken, verifyToken, type JwtPayload } from "./jwt";
-import { json } from "./http";
 import { prisma } from "../../db/client";
 
 export type AuthResult =
     | { ok: true; user: JwtPayload }
-    | { ok: false; response: Response };
+    | { ok: false; status: number; error: string };
 
-export async function requireAuth(request: Request): Promise<AuthResult> {
-    const token = getBearerToken(request);
-    if (!token) return { ok: false, response: json({ error: "Missing token" }, 401) };
+export async function requireAuth(req: Request): Promise<AuthResult> {
+    const token = getBearerToken(req);
+    if (!token) return { ok: false, status: 401, error: "Missing token" };
 
     const payload = await verifyToken(token);
-    if (!payload) return { ok: false, response: json({ error: "Invalid or expired token" }, 401) };
+    if (!payload) return { ok: false, status: 401, error: "Invalid or expired token" };
 
     const dbUser = await prisma.user.findUnique({
         where: { id: payload.userId },
         select: { id: true, username: true, role: true },
     });
-    if (!dbUser) return { ok: false, response: json({ error: "User not found" }, 401) };
+    if (!dbUser) return { ok: false, status: 401, error: "User not found" };
 
     return {
         ok: true,
@@ -29,29 +29,35 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
     };
 }
 
-export async function requireAdmin(request: Request): Promise<AuthResult> {
-    const auth = await requireAuth(request);
+export async function requireAdmin(req: Request): Promise<AuthResult> {
+    const auth = await requireAuth(req);
     if (!auth.ok) return auth;
     if (auth.user.role !== "ADMIN") {
-        return { ok: false, response: json({ error: "Forbidden" }, 403) };
+        return { ok: false, status: 403, error: "Forbidden" };
     }
     return auth;
 }
 
-type Handler = (request: Request, user: JwtPayload) => Response | Promise<Response>;
+type Handler = (req: Request, res: Response, user: JwtPayload) => void | Promise<void>;
 
-export function admin(handler: Handler): (request: Request) => Promise<Response> {
-    return async (request) => {
-        const auth = await requireAdmin(request);
-        if (!auth.ok) return auth.response;
-        return handler(request, auth.user);
+export function admin(handler: Handler) {
+    return async (req: Request, res: Response): Promise<void> => {
+        const auth = await requireAdmin(req);
+        if (!auth.ok) {
+            res.status(auth.status).json({ error: auth.error });
+            return;
+        }
+        await handler(req, res, auth.user);
     };
 }
 
-export function user(handler: Handler): (request: Request) => Promise<Response> {
-    return async (request) => {
-        const auth = await requireAuth(request);
-        if (!auth.ok) return auth.response;
-        return handler(request, auth.user);
+export function user(handler: Handler) {
+    return async (req: Request, res: Response): Promise<void> => {
+        const auth = await requireAuth(req);
+        if (!auth.ok) {
+            res.status(auth.status).json({ error: auth.error });
+            return;
+        }
+        await handler(req, res, auth.user);
     };
 }
